@@ -28,7 +28,7 @@ public class Statistics {
     public synchronized void printSummary() {
         System.out.println("\n==== Simulation Summary ====");
         System.out.println("Planes served: " + totalPlanesServed);
-        System.out.println("Waiting Times (ms): "+waitingTimes);
+        System.out.println("Waiting Times (ms): "+ waitingTimes);
         System.out.println("Waiting Time (ms): Max = " + maximumWaitingTime + ", Min = " + minimumWaitingTime + ", Avg = " + (totalWaitingTime / totalPlanesServed));
     }
 }

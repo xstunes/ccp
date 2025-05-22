@@ -3,7 +3,6 @@ package ccp_assignment_tp077852;
 
 import java.util.Random;
 
-
 public class Plane extends Thread{
     //object
     private final int PlaneID;
@@ -31,25 +30,28 @@ public class Plane extends Thread{
             {
                 System.out.println("Plane: " + PlaneID + ": Emergency landing requested.");
                 airport.requestLanding(PlaneID); //request landing
+                Thread.sleep(1000); //wait for 1 second
+                long  arrivalTime = System.currentTimeMillis(); //get arrival time
+                long waitingTime = System.currentTimeMillis() - arrivalTime; //calculate waiting time
+                statistics.recordPlane(waitingTime); //record waiting time
+                airport.releaseRunway(PlaneID); //release runway
+
             }
-            else
+            else if(!isEmergency) //if not an emergency
             {
-                Random random = new Random();
-                boolean landed = false;
-                long arrivalTime = System.currentTimeMillis(); //record when plane arrives
-                while (!landed) {
-                    // Random chance to reject landing (e.g., 30% chance)
-                    if (random.nextInt(100) < 30) {
-                        airport.rejectLanding(PlaneID); //reject landing
-                    } else {
-                        airport.requestLanding(PlaneID);
-                        //simulate landing time
-                        Thread.sleep(1000);
-                        long waitingTime = System.currentTimeMillis() - arrivalTime; //calculate waiting time
-                        airport.releaseRunway(PlaneID);
-                        statistics.recordPlane(waitingTime); //record waiting time
-                        landed = true;
-                    }
+                if (airport.runway.availablePermits() == 0) //if runway is not available
+                {
+                    System.out.println("Plane: " + PlaneID + ": Landing rejected. Circling in the air.");
+                    airport.rejectLanding(PlaneID); //reject landing
+                }
+                else
+                {
+                    airport.requestLanding(PlaneID); //request landing
+                    Thread.sleep(1000); //wait for 1 second
+                    long  arrivalTime = System.currentTimeMillis(); //get arrival time
+                    long waitingTime = System.currentTimeMillis() - arrivalTime; //calculate waiting time
+                    statistics.recordPlane(waitingTime); //record waiting time
+                    airport.releaseRunway(PlaneID); //release runway
                 }
             }
 
@@ -66,6 +68,8 @@ public class Plane extends Thread{
             Thread.sleep(1000);
 
             airport.releaseGate(PlaneID); //release gate
+            
+            airport.TakeOff(PlaneID); //request takeoff
             System.out.println("Plane: " + PlaneID + ": Taking off.");
             Thread.sleep(1000);
             airport.releaseRunway(PlaneID); //release runway
