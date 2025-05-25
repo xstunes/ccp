@@ -26,53 +26,56 @@ public class Plane extends Thread{
     {
         try
         {
-            if (isEmergency)
+            long startWait = System.currentTimeMillis();
+
+            // Random sleep to simulate random arrival time
+            Thread.sleep(new Random().nextInt(2000));
+
+            if (isEmergency)//emergency airplane
             {
-                System.out.println("Plane: " + PlaneID + ": Emergency landing requested.");
-                airport.requestLanding(PlaneID); //request landing
-                Thread.sleep(1000); //wait for 1 second
-                long  arrivalTime = System.currentTimeMillis(); //get arrival time
-                long waitingTime = System.currentTimeMillis() - arrivalTime; //calculate waiting time
-                statistics.recordPlane(waitingTime); //record waiting time
+                System.out.println(Thread.currentThread().getName() + ": Emergency landing requested.");
+                airport.requestLanding(PlaneID, isEmergency); //request landing
+                Thread.sleep(1500); //wait for 1.5 second
                 airport.releaseRunway(PlaneID); //release runway
 
             }
             else if(!isEmergency) //if not an emergency
             {
-                if (airport.runway.availablePermits() == 0) //if runway is not available
+                if (!airport.isRunwayEmpty()) //if runway is not available
                 {
-                    System.out.println("Plane: " + PlaneID + ": Landing rejected. Circling in the air.");
-                    airport.rejectLanding(PlaneID); //reject landing
+                    System.out.println(Thread.currentThread().getName() + ": Landing rejected. Circling in the air.");
+                    airport.rejectLanding(PlaneID, isEmergency); //reject landing
                 }
                 else
                 {
-                    airport.requestLanding(PlaneID); //request landing
+                    airport.requestLanding(PlaneID, isEmergency); //request landing
                     Thread.sleep(1000); //wait for 1 second
-                    long  arrivalTime = System.currentTimeMillis(); //get arrival time
-                    long waitingTime = System.currentTimeMillis() - arrivalTime; //calculate waiting time
-                    statistics.recordPlane(waitingTime); //record waiting time
                     airport.releaseRunway(PlaneID); //release runway
                 }
             }
 
-            airport.requestGate(PlaneID); //request gate
+            int assignedGate = airport.assignGate(PlaneID); // request and get assigned gate
 
             //simulate disembark and cleaning time
-            System.out.println("Plane: " + PlaneID + ": Disembarking "+ passengers + " passengers.");
+            System.out.println(Thread.currentThread().getName() + ": Disembarking "+ passengers + " passengers.");
             Thread.sleep(1000);
-            System.out.println("Plane: " + PlaneID + ": Cleaning the plane.");
+            System.out.println(Thread.currentThread().getName() + ": Cleaning the plane.");
             Thread.sleep(1000);
 
             airport.refuel(PlaneID); //request refuel
-            System.out.println("Plane: " + PlaneID + ": Embarking "+passengers+ " passengers.");
+            System.out.println(Thread.currentThread().getName() + ": Embarking "+passengers+ " passengers.");
             Thread.sleep(1000);
 
-            airport.releaseGate(PlaneID); //release gate
+            airport.releaseGate(PlaneID, assignedGate); //release gate
             
             airport.TakeOff(PlaneID); //request takeoff
-            System.out.println("Plane: " + PlaneID + ": Taking off.");
+            System.out.println(Thread.currentThread().getName() + ": Taking off.");
             Thread.sleep(1000);
             airport.releaseRunway(PlaneID); //release runway
+
+            long endWait = System.currentTimeMillis();
+            long waitingTime = endWait - startWait;
+            statistics.recordPlane(waitingTime, passengers);
         }
         catch (InterruptedException e)
         {
