@@ -1,12 +1,13 @@
 package ccp_assignment_tp077852;
 //libraries
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Airport {
     //semaphore variables
     public final Semaphore runway = new Semaphore(1); //one plane, one runway
     private final Semaphore gates = new Semaphore(2); //two gates only available, planes on ground can be 3.
-    private final Semaphore refuelTruck = new Semaphore(1); //one refuel truck only available
+    private final ReentrantLock refuelTruck = new ReentrantLock(); //one refuel truck only available
 
     public final boolean[] gateAvailable = {true, true}; // Track availability of each gate
 
@@ -119,11 +120,14 @@ public class Airport {
     public void refuel(int PlaneID) throws InterruptedException
     {
         System.out.println(Thread.currentThread().getName() + ": Waiting to acquire refuel truck...");
-        refuelTruck.acquire();
-        System.out.println(Thread.currentThread().getName() + ": Acquired refuel truck.");
-        Thread.sleep(2000); // Simulate refueling time
-        System.out.println(Thread.currentThread().getName() + ": Refueling completed.");
-        refuelTruck.release();
-        System.out.println(Thread.currentThread().getName() + ": Released refuel truck.");
+        refuelTruck.lock();
+        try {
+            System.out.println(Thread.currentThread().getName() + ": Acquired refuel truck.");
+            Thread.sleep(2000); // Simulate refueling time
+            System.out.println(Thread.currentThread().getName() + ": Refueling completed.");
+        } finally {
+            refuelTruck.unlock();
+            System.out.println(Thread.currentThread().getName() + ": Released refuel truck.");
+        }
     }
 }
