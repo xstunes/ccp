@@ -20,7 +20,7 @@ public class Main
             planeThread.start();
             planeThreads.add(planeThread);
         }
-        // Wait for all planes to finish
+        //Wait for all planes to finish
         try {
             for (Thread planeThread : planeThreads) {
                 planeThread.join();
@@ -30,7 +30,9 @@ public class Main
             System.err.println("Thread interrupted: " + e.getMessage());
         }
 
-        // Print statistics summary after all planes are served
+        //Print statistics summary after all planes are served
         statistics.printSummary();
     }
+
+    
 }

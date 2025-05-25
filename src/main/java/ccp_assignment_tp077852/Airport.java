@@ -8,72 +8,96 @@ public class Airport {
     private final Semaphore gates = new Semaphore(2); //two gates only available, planes on ground can be 3.
     private final Semaphore refuelTruck = new Semaphore(1); //one refuel truck only available
 
-    private final boolean[] gateAvailable = {true, true}; // Track availability of each gate
+    public final boolean[] gateAvailable = {true, true}; // Track availability of each gate
 
     private int waitingEmergencyPlanes = 0;
+    private int waitingTakeoffPlanes = 0; // new counter for waiting takeoff planes
 
     // Check if runway is empty
     public boolean isRunwayEmpty() {
         return runway.availablePermits() == 1;
     }
 
-    public synchronized void requestLanding(int PlaneID, boolean isEmergency) throws InterruptedException
+    public void requestLanding(int PlaneID, boolean isEmergency) throws InterruptedException
     {
-        System.out.println(Thread.currentThread().getName() + ": Requesting runway for landing...");
-        if (isEmergency) {
-            waitingEmergencyPlanes++;
-            while (runway.availablePermits() == 0) {
-                wait();
+        synchronized(this) {
+            if (isEmergency) {
+                waitingEmergencyPlanes++;
+                while (runway.availablePermits() == 0) {
+                    wait();
+                }
+                waitingEmergencyPlanes--;
+                runway.acquire();
+            } else {
+                
+                // Accept non-emergency planes if runway is available and no emergency planes waiting or takeoff planes waiting
+                while (runway.availablePermits() == 0 || waitingEmergencyPlanes > 0 || waitingTakeoffPlanes > 0) {
+                    wait();
+                }
+                runway.acquire();
             }
-            waitingEmergencyPlanes--;
-            runway.acquire();
-        } else {
-            while (runway.availablePermits() == 0 || waitingEmergencyPlanes > 0) {
-                wait();
-            }
-            runway.acquire();
         }
         System.out.println("ATC: Approved "+ Thread.currentThread().getName() + " for landing.");
         System.out.println(Thread.currentThread().getName() + ": Landing on the runway.");
-        Thread.sleep(2000); // Simulate landing time
+        Thread.sleep(2000); // Simulate landing time outside synchronized block
         System.out.println(Thread.currentThread().getName()+ ": Landed on the runway.");
     }
 
-    public synchronized void releaseRunway(int PlaneID) throws InterruptedException
+    public void releaseRunway(int PlaneID) throws InterruptedException
     {
         System.out.println("Runway currently occupied by " + Thread.currentThread().getName() + ": Releasing the runway...");
-        Thread.sleep(2000); // Simulate releasing time
-        runway.release();
-        notifyAll();
+        Thread.sleep(2000); // Simulate releasing time outside synchronized block
+        synchronized(this) {
+            runway.release();
+            notifyAll();
+        }
         System.out.println("Runway currently free.");
     }
 
     public void rejectLanding(int PlaneID, boolean isEmergency) throws InterruptedException
     {
-        System.out.println(Thread.currentThread().getName() + ": Landing rejected. Circling in the air.");
+        System.out.println("ATC: " + Thread.currentThread().getName() + " Landing is rejected. Airport is full. Circling in the air.");
         Thread.sleep(2000); // Simulate circling time
-        requestLanding(PlaneID, isEmergency); // Request landing again
+        boolean landed = false;
+        while (!landed) {
+            try {
+                requestLanding(PlaneID, isEmergency);
+                landed = true;
+            } catch (InterruptedException e) {
+                System.err.println(Thread.currentThread().getName() + ": Interrupted while waiting to land.");
+                throw e;
+            }
+        }
     }
 
     public void TakeOff(int PlaneID) throws InterruptedException
     {
+        synchronized(this) {
+            waitingTakeoffPlanes++;
+        }
         System.out.println(Thread.currentThread().getName() + ": Requesting runway for takeoff...");
         Thread.sleep(2000); // Simulate waiting time
         runway.acquire();
+        synchronized(this) {
+            waitingTakeoffPlanes--;
+            notifyAll(); // Notify waiting threads that runway state changed
+        }
         System.out.println("ATC: Approved "+ Thread.currentThread().getName() + " for take off.");
     }
 
 
     // Assign gates automatically after landing
-    public synchronized int assignGate(int PlaneID) throws InterruptedException
+    public int assignGate(int PlaneID) throws InterruptedException
     {
         gates.acquire();
         int assignedGate = -1;
-        for (int i = 0; i < gateAvailable.length; i++) {
-            if (gateAvailable[i]) {
-                gateAvailable[i] = false;
-                assignedGate = i + 1; // Gate numbers start at 1
-                break;
+        synchronized(this) {
+            for (int i = 0; i < gateAvailable.length; i++) {
+                if (gateAvailable[i]) {
+                    gateAvailable[i] = false;
+                    assignedGate = i + 1; // Gate numbers start at 1
+                    break;
+                }
             }
         }
         System.out.println("ATC: " + Thread.currentThread().getName() + " is assigned gate " + assignedGate + ".");
@@ -82,11 +106,13 @@ public class Airport {
         return assignedGate;
     }
 
-    public synchronized void releaseGate(int PlaneID, int gateNumber) throws InterruptedException
+    public void releaseGate(int PlaneID, int gateNumber) throws InterruptedException
     {
         System.out.println(Thread.currentThread().getName() + ": Leaving gate " + gateNumber + "...");
         Thread.sleep(2000); // Simulate releasing time
-        gateAvailable[gateNumber - 1] = true;
+        synchronized(this) {
+            gateAvailable[gateNumber - 1] = true;
+        }
         gates.release();
     }
 

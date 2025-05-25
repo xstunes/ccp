@@ -18,6 +18,7 @@ public class Plane extends Thread{
         this.statistics = statistics; //refer to stats
         this.isEmergency = isEmergency; //is it an emergency?
         this.passengers = new Random().nextInt(50); //max number of passengers
+
         setName("Thread-" + PlaneID);
     }
 
@@ -41,17 +42,9 @@ public class Plane extends Thread{
             }
             else if(!isEmergency) //if not an emergency
             {
-                if (!airport.isRunwayEmpty()) //if runway is not available
-                {
-                    System.out.println(Thread.currentThread().getName() + ": Landing rejected. Circling in the air.");
-                    airport.rejectLanding(PlaneID, isEmergency); //reject landing
-                }
-                else
-                {
-                    airport.requestLanding(PlaneID, isEmergency); //request landing
-                    Thread.sleep(1000); //wait for 1 second
-                    airport.releaseRunway(PlaneID); //release runway
-                }
+                airport.requestLanding(PlaneID, isEmergency); // request landing directly without rejection
+                Thread.sleep(1000); //wait for 1 second
+                airport.releaseRunway(PlaneID); //release runway
             }
 
             int assignedGate = airport.assignGate(PlaneID); // request and get assigned gate

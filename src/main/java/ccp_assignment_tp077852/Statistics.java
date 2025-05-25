@@ -10,12 +10,7 @@ public class Statistics {
     private long minimumWaitingTime = Long.MAX_VALUE;
     private int totalPassengersBoarded = 0;
     private final ArrayList<Long> waitingTimes = new ArrayList<>();
-
-    private boolean[] gateAvailable;
-
-    public void setGateStatus(boolean[] gateAvailable) {
-        this.gateAvailable = gateAvailable;
-    }
+    private final Airport airport = new Airport(); // Reference to the Airport instance    private boolean[] gateAvailable; // Track availability of each gate
 
     public synchronized void recordPlane(long waitingTime, int passengers) {
         totalPlanesServed++;
@@ -32,12 +27,12 @@ public class Statistics {
         }
     }
 
-    public synchronized boolean areAllGatesEmpty() {
-        if (gateAvailable == null) {
+    public boolean areAllGatesEmpty() {
+        if (airport.gateAvailable == null) {
             System.out.println("Error: Gate status not set.");
             return false;
         }
-        for (boolean available : gateAvailable) {
+        for (boolean available : airport.gateAvailable) {
             if (!available) {
                 return false;
             }
@@ -67,7 +62,7 @@ public class Statistics {
     }
 
     public synchronized void printSummary() {
-        System.out.println("\n==== Simulation Summary ====");
+        System.out.println("\n==== ATC Sanity Check ====");
         System.out.println("Planes served: " + totalPlanesServed);
         System.out.println("Passengers boarded: " + totalPassengersBoarded);
         System.out.println("Waiting Times (ms): "+ waitingTimes);
