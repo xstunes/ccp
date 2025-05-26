@@ -49,7 +49,7 @@ public class Plane extends Thread{
 
             int assignedGate = airport.assignGate(PlaneID); // request and get assigned gate
 
-            //simulate disembark and cleaning time
+            //simulate disembark, embarking and cleaning time
             System.out.println(Thread.currentThread().getName() + ": Disembarking "+ passengers + " passengers.");
             Thread.sleep(1000);
             System.out.println(Thread.currentThread().getName() + ": Cleaning the plane.");
